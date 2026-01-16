@@ -8,6 +8,7 @@ import { RootStackParamList } from '../types';
 
 // Screens
 import LibraryScreen from '../screens/LibraryScreen';
+import ReaderScreen from '../screens/ReaderScreen';
 
 // Placeholder screens - will be replaced with actual implementations
 import { View, Text, StyleSheet } from 'react-native';
@@ -19,7 +20,6 @@ const PlaceholderScreen = ({ name }: { name: string }) => (
 );
 
 // Temporary placeholder components until screens are implemented
-const ReaderScreen = () => <PlaceholderScreen name="Reader" />;
 const AICompanionScreen = () => <PlaceholderScreen name="AI Companion" />;
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
