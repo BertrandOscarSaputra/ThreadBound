@@ -9,18 +9,7 @@ import { RootStackParamList } from '../types';
 // Screens
 import LibraryScreen from '../screens/LibraryScreen';
 import ReaderScreen from '../screens/ReaderScreen';
-
-// Placeholder screens - will be replaced with actual implementations
-import { View, Text, StyleSheet } from 'react-native';
-
-const PlaceholderScreen = ({ name }: { name: string }) => (
-  <View style={styles.placeholder}>
-    <Text style={styles.placeholderText}>{name}</Text>
-  </View>
-);
-
-// Temporary placeholder components until screens are implemented
-const AICompanionScreen = () => <PlaceholderScreen name="AI Companion" />;
+import AICompanionScreen from '../screens/AICompanionScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -61,17 +50,3 @@ export default function AppNavigator() {
     </NavigationContainer>
   );
 }
-
-const styles = StyleSheet.create({
-  placeholder: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#16213e',
-  },
-  placeholderText: {
-    color: '#fff',
-    fontSize: 24,
-    fontWeight: '600',
-  },
-});

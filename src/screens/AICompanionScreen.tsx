@@ -114,21 +114,25 @@ export default function AICompanionScreen() {
   }, [book, currentChapter, handleAIRequest]);
 
   const handleExplain = useCallback(() => {
-    Alert.prompt?.(
-      'What would you like explained?',
-      'Enter a passage or concept',
-      (text) => {
-        if (text && book) {
-          handleAIRequest('explain', `Explain: ${text}`, () =>
-            askQuestion(`Please explain this: ${text}`, book.filePath, currentChapter)
-          );
+    // Alert.prompt is iOS-only, fallback to standard alert
+    if (Platform.OS === 'ios' && Alert.prompt) {
+      Alert.prompt(
+        'What would you like explained?',
+        'Enter a passage or concept',
+        (text) => {
+          if (text && book) {
+            handleAIRequest('explain', `Explain: ${text}`, () =>
+              askQuestion(`Please explain this: ${text}`, book.filePath, currentChapter)
+            );
+          }
         }
-      }
-    ) ||
+      );
+    } else {
       Alert.alert(
         'Explain Feature',
         'Type your question in the chat below to ask about specific passages or concepts.'
       );
+    }
   }, [book, currentChapter, handleAIRequest]);
 
   const handleSend = useCallback(() => {
