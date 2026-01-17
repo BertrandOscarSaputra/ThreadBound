@@ -1,7 +1,7 @@
 /**
  * Quick Actions component - predefined AI assistant actions
  */
-import React from 'react';
+import React, { memo, useMemo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 
 interface QuickActionsProps {
@@ -20,43 +20,47 @@ interface ActionButton {
   onPress: () => void;
 }
 
-export default function QuickActions({
+function QuickActions({
   onSummary,
   onRecap,
   onCharacters,
   onExplain,
   disabled = false,
 }: QuickActionsProps) {
-  const actions: ActionButton[] = [
-    {
-      id: 'summary',
-      icon: '📖',
-      label: 'Summary',
-      description: "What's happened so far?",
-      onPress: onSummary,
-    },
-    {
-      id: 'recap',
-      icon: '🔄',
-      label: 'Quick Recap',
-      description: 'Refresh my memory',
-      onPress: onRecap,
-    },
-    {
-      id: 'characters',
-      icon: '👥',
-      label: 'Characters',
-      description: "Who's who?",
-      onPress: onCharacters,
-    },
-    {
-      id: 'explain',
-      icon: '💡',
-      label: 'Explain',
-      description: 'Help me understand',
-      onPress: onExplain,
-    },
-  ];
+  // Memoize actions array to prevent re-renders
+  const actions: ActionButton[] = useMemo(
+    () => [
+      {
+        id: 'summary',
+        icon: '📖',
+        label: 'Summary',
+        description: "What's happened so far?",
+        onPress: onSummary,
+      },
+      {
+        id: 'recap',
+        icon: '🔄',
+        label: 'Quick Recap',
+        description: 'Refresh my memory',
+        onPress: onRecap,
+      },
+      {
+        id: 'characters',
+        icon: '👥',
+        label: 'Characters',
+        description: "Who's who?",
+        onPress: onCharacters,
+      },
+      {
+        id: 'explain',
+        icon: '💡',
+        label: 'Explain',
+        description: 'Help me understand',
+        onPress: onExplain,
+      },
+    ],
+    [onSummary, onRecap, onCharacters, onExplain]
+  );
 
   return (
     <View style={styles.container}>
@@ -79,6 +83,8 @@ export default function QuickActions({
     </View>
   );
 }
+
+export default memo(QuickActions);
 
 const styles = StyleSheet.create({
   container: {

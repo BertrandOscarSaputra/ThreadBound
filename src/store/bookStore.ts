@@ -81,3 +81,28 @@ export const useBookStore = create<BookState>()(
     }
   )
 );
+
+// Atomic selectors for granular state access (reduces re-renders)
+export const useBooks = () => useBookStore((s) => s.books);
+export const useProgress = () => useBookStore((s) => s.progress);
+export const useAIHistory = () => useBookStore((s) => s.aiHistory);
+export const useCurrentBookId = () => useBookStore((s) => s.currentBookId);
+
+// Action selectors (stable references, don't cause re-renders)
+export const useBookActions = () =>
+  useBookStore((s) => ({
+    addBook: s.addBook,
+    removeBook: s.removeBook,
+  }));
+
+export const useProgressActions = () =>
+  useBookStore((s) => ({
+    updateProgress: s.updateProgress,
+    setCurrentBook: s.setCurrentBook,
+  }));
+
+export const useAIActions = () =>
+  useBookStore((s) => ({
+    addAIMessage: s.addAIMessage,
+    clearAIHistory: s.clearAIHistory,
+  }));

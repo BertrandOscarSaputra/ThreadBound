@@ -2,19 +2,19 @@
  * Book management service for importing and parsing EPUB files
  */
 import * as DocumentPicker from 'expo-document-picker';
-import * as FileSystem from 'expo-file-system';
+import { Paths, File, Directory } from 'expo-file-system';
 import JSZip from 'jszip';
 import { Book, Chapter } from '../types';
 
-const BOOKS_DIR = `${FileSystem.documentDirectory}books/`;
+const getBooksDir = () => new Directory(Paths.document, 'books');
 
 /**
  * Ensure books directory exists
  */
 async function ensureBooksDir(): Promise<void> {
-  const dirInfo = await FileSystem.getInfoAsync(BOOKS_DIR);
-  if (!dirInfo.exists) {
-    await FileSystem.makeDirectoryAsync(BOOKS_DIR, { intermediates: true });
+  const booksDir = getBooksDir();
+  if (!booksDir.exists) {
+    booksDir.create({ intermediates: true });
   }
 }
 
@@ -32,26 +32,27 @@ export async function importBook(): Promise<Book | null> {
       return null;
     }
 
-    const file = result.assets[0];
+    const sourceUri = result.assets[0].uri;
+    const sourceFile = new File(sourceUri);
     await ensureBooksDir();
 
     // Copy file to app storage
     const bookId = `book_${Date.now()}`;
-    const destPath = `${BOOKS_DIR}${bookId}.epub`;
-    await FileSystem.copyAsync({
-      from: file.uri,
-      to: destPath,
-    });
+    const booksDir = getBooksDir();
+    const destFile = new File(booksDir, `${bookId}.epub`);
+    
+    // Use copy method from source file
+    sourceFile.copy(destFile);
 
     // Parse EPUB metadata
-    const metadata = await parseEpubMetadata(destPath);
+    const metadata = await parseEpubMetadata(destFile.uri);
 
     const book: Book = {
       id: bookId,
-      title: metadata.title || file.name?.replace('.epub', '') || 'Unknown Title',
+      title: metadata.title || result.assets[0].name.replace('.epub', '') || 'Unknown Title',
       author: metadata.author || 'Unknown Author',
       coverUri: metadata.coverUri,
-      filePath: destPath,
+      filePath: destFile.uri,
       fileType: 'epub',
       chapters: metadata.chapters,
       addedAt: Date.now(),
@@ -75,9 +76,8 @@ export async function parseEpubMetadata(filePath: string): Promise<{
 }> {
   try {
     // Read EPUB file as base64
-    const base64 = await FileSystem.readAsStringAsync(filePath, {
-      encoding: FileSystem.EncodingType.Base64,
-    });
+    const file = new File(filePath);
+    const base64 = await file.base64();
 
     const zip = new JSZip();
     await zip.loadAsync(base64, { base64: true });
@@ -220,13 +220,29 @@ async function extractCover(
 
     // Determine file extension
     const ext = coverHref.split('.').pop() || 'jpg';
-    const coverFilePath = bookPath.replace('.epub', `_cover.${ext}`);
     
-    await FileSystem.writeAsStringAsync(coverFilePath, coverData, {
-      encoding: FileSystem.EncodingType.Base64,
+    // Construct cover file path using the same directory as the book
+    // We can't easily do string manipulation on new File objects for sibling files without parent ref
+    // So let's use the directory from the book path or just use the booksDir global since we know where it is
+    const bookFile = new File(bookPath);
+    // Note: bookPath comes from destFile.uri in importBook
+    
+    // Simplified: We know books go into booksDir. 
+    // Just create a new file reference in booksDir.
+    // However, bookPath might be absolute uri string.
+    
+    // Robust way: get filename from bookPath, replace extension
+    const bookFileName = bookPath.split('/').pop();
+    if (!bookFileName) return undefined;
+    
+    const coverFileName = bookFileName.replace('.epub', `_cover.${ext}`);
+    const coverFile = new File(getBooksDir(), coverFileName);
+    
+    coverFile.write(coverData, {
+      encoding: 'base64',
     });
 
-    return coverFilePath;
+    return coverFile.uri;
   } catch (error) {
     console.error('Error extracting cover:', error);
     return undefined;
@@ -238,9 +254,16 @@ async function extractCover(
  */
 export async function deleteBook(book: Book): Promise<void> {
   try {
-    await FileSystem.deleteAsync(book.filePath, { idempotent: true });
+    const bookFile = new File(book.filePath);
+    if (bookFile.exists) {
+      bookFile.delete();
+    }
+    
     if (book.coverUri) {
-      await FileSystem.deleteAsync(book.coverUri, { idempotent: true });
+        const coverFile = new File(book.coverUri);
+        if (coverFile.exists) {
+            coverFile.delete();
+        }
     }
   } catch (error) {
     console.error('Error deleting book:', error);
@@ -256,9 +279,8 @@ export async function getChapterContent(
   chapterIndex: number
 ): Promise<string> {
   try {
-    const base64 = await FileSystem.readAsStringAsync(filePath, {
-      encoding: FileSystem.EncodingType.Base64,
-    });
+    const file = new File(filePath);
+    const base64 = await file.base64();
 
     const zip = new JSZip();
     await zip.loadAsync(base64, { base64: true });

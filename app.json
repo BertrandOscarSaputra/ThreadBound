@@ -3,6 +3,7 @@
     "name": "ThreadBound",
     "slug": "ThreadBound",
     "version": "1.0.0",
+    "scheme": "threadbound",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -21,7 +22,8 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.anonymous.ThreadBound"
     },
     "web": {
       "favicon": "./assets/favicon.png"

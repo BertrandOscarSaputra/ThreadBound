@@ -16,7 +16,7 @@ import {
   Alert,
 } from 'react-native';
 import { useRoute, useNavigation, RouteProp } from '@react-navigation/native';
-import { useBookStore } from '../store/bookStore';
+import { useBooks, useProgress, useAIHistory, useAIActions } from '../store/bookStore';
 import {
   generateSummary,
   generateRecap,
@@ -34,7 +34,10 @@ export default function AICompanionScreen() {
   const navigation = useNavigation();
   const { bookId } = route.params;
 
-  const { books, progress, aiHistory, addAIMessage } = useBookStore();
+  const books = useBooks();
+  const progress = useProgress();
+  const aiHistory = useAIHistory();
+  const { addAIMessage } = useAIActions();
   const book = books.find((b) => b.id === bookId);
   const bookProgress = progress[bookId];
   const messages = aiHistory[bookId] || [];
@@ -42,6 +45,7 @@ export default function AICompanionScreen() {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const flatListRef = useRef<FlatList>(null);
+  const inputRef = useRef<TextInput>(null);
 
   const currentChapter = bookProgress?.currentChapterIndex || 0;
 
@@ -140,6 +144,7 @@ export default function AICompanionScreen() {
 
     const question = input.trim();
     setInput('');
+    inputRef.current?.clear(); // Clear native input
 
     handleAIRequest('chat', question, () =>
       askQuestion(question, book.filePath, currentChapter)
@@ -219,6 +224,10 @@ export default function AICompanionScreen() {
           onContentSizeChange={() =>
             flatListRef.current?.scrollToEnd({ animated: true })
           }
+          // Performance optimizations
+          removeClippedSubviews={true}
+          maxToRenderPerBatch={10}
+          windowSize={5}
         />
 
         {loading && (
@@ -230,10 +239,11 @@ export default function AICompanionScreen() {
 
         <View style={styles.inputContainer}>
           <TextInput
+            ref={inputRef}
             style={styles.input}
             placeholder="Ask about the story..."
             placeholderTextColor="#8b8b8b"
-            value={input}
+            defaultValue=""
             onChangeText={setInput}
             multiline
             maxLength={500}

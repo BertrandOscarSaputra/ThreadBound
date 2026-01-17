@@ -14,7 +14,7 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { useBookStore } from '../store/bookStore';
+import { useBooks, useProgress, useBookActions } from '../store/bookStore';
 import { importBook, deleteBook } from '../services/bookService';
 import { Book, RootStackParamList } from '../types';
 
@@ -22,7 +22,9 @@ type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'Library'>;
 
 export default function LibraryScreen() {
   const navigation = useNavigation<NavigationProp>();
-  const { books, addBook, removeBook, progress } = useBookStore();
+  const books = useBooks();
+  const progress = useProgress();
+  const { addBook, removeBook } = useBookActions();
   const [loading, setLoading] = React.useState(false);
 
   const handleImport = useCallback(async () => {
@@ -117,6 +119,11 @@ export default function LibraryScreen() {
         contentContainerStyle={styles.listContent}
         ListEmptyComponent={renderEmpty}
         columnWrapperStyle={styles.row}
+        // Performance optimizations
+        removeClippedSubviews={true}
+        maxToRenderPerBatch={10}
+        windowSize={5}
+        initialNumToRender={6}
       />
 
       <TouchableOpacity

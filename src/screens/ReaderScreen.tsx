@@ -15,7 +15,7 @@ import {
 } from 'react-native';
 import { useRoute, useNavigation, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { useBookStore } from '../store/bookStore';
+import { useBooks, useProgress, useProgressActions } from '../store/bookStore';
 import { getChapterContent } from '../services/bookService';
 import { RootStackParamList, Chapter } from '../types';
 
@@ -27,7 +27,9 @@ export default function ReaderScreen() {
   const navigation = useNavigation<NavigationProp>();
   const { bookId } = route.params;
 
-  const { books, progress, updateProgress, setCurrentBook } = useBookStore();
+  const books = useBooks();
+  const progress = useProgress();
+  const { updateProgress, setCurrentBook } = useProgressActions();
   const book = books.find((b) => b.id === bookId);
 
   const [content, setContent] = useState<string>('');
@@ -211,6 +213,10 @@ export default function ReaderScreen() {
                   </Text>
                 </TouchableOpacity>
               )}
+              // Performance optimizations
+              removeClippedSubviews={true}
+              maxToRenderPerBatch={15}
+              initialNumToRender={10}
             />
           </View>
         </View>

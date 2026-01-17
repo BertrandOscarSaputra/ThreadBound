@@ -3,7 +3,7 @@
  */
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { useBookStore } from '../store/bookStore';
+import { useProgress } from '../store/bookStore';
 
 interface ProgressTrackerProps {
   bookId: string;
@@ -16,7 +16,7 @@ export default function ProgressTracker({
   showLabel = true,
   compact = false,
 }: ProgressTrackerProps) {
-  const { progress } = useBookStore();
+  const progress = useProgress();
   const bookProgress = progress[bookId];
 
   if (!bookProgress) {
