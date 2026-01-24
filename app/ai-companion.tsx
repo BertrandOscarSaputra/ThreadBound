@@ -1,7 +1,7 @@
 /**
  * AI Companion Screen - Chat interface with reading assistant
  */
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef } from "react";
 import {
   View,
   Text,
@@ -14,35 +14,36 @@ import {
   Platform,
   ActivityIndicator,
   Alert,
-} from 'react-native';
-import { useRoute, useNavigation, RouteProp } from '@react-navigation/native';
-import { useBooks, useProgress, useAIHistory, useAIActions } from '../store/bookStore';
+} from "react-native";
+import { useLocalSearchParams } from "expo-router";
+import {
+  useBooks,
+  useProgress,
+  useAIHistory,
+  useAIActions,
+} from "@/store/bookStore";
 import {
   generateSummary,
   generateRecap,
   generateCharacterGuide,
   askQuestion,
   isAIConfigured,
-} from '../services/aiService';
-import QuickActions from '../components/QuickActions';
-import { RootStackParamList, AIMessage } from '../types';
-
-type AICompanionRouteProp = RouteProp<RootStackParamList, 'AICompanion'>;
+} from "@/services/aiService";
+import QuickActions from "@/components/QuickActions";
+import { AIMessage } from "@/types";
 
 export default function AICompanionScreen() {
-  const route = useRoute<AICompanionRouteProp>();
-  const navigation = useNavigation();
-  const { bookId } = route.params;
+  const { bookId } = useLocalSearchParams<{ bookId: string }>();
 
   const books = useBooks();
   const progress = useProgress();
   const aiHistory = useAIHistory();
   const { addAIMessage } = useAIActions();
   const book = books.find((b) => b.id === bookId);
-  const bookProgress = progress[bookId];
-  const messages = aiHistory[bookId] || [];
+  const bookProgress = bookId ? progress[bookId] : undefined;
+  const messages = bookId ? aiHistory[bookId] || [] : [];
 
-  const [input, setInput] = useState('');
+  const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const flatListRef = useRef<FlatList>(null);
   const inputRef = useRef<TextInput>(null);
@@ -50,7 +51,8 @@ export default function AICompanionScreen() {
   const currentChapter = bookProgress?.currentChapterIndex || 0;
 
   const addMessage = useCallback(
-    (role: 'user' | 'assistant', content: string, type?: AIMessage['type']) => {
+    (role: "user" | "assistant", content: string, type?: AIMessage["type"]) => {
+      if (!bookId) return;
       const message: AIMessage = {
         id: `msg_${Date.now()}_${Math.random()}`,
         role,
@@ -65,28 +67,28 @@ export default function AICompanionScreen() {
 
   const handleAIRequest = useCallback(
     async (
-      type: AIMessage['type'],
+      type: AIMessage["type"],
       userMessage: string,
       aiFunction: () => Promise<string>
     ) => {
       if (!book || !isAIConfigured()) {
         Alert.alert(
-          'AI Not Configured',
-          'Please set your Gemini API key in the environment variables.'
+          "AI Not Configured",
+          "Please set your Gemini API key in the environment variables."
         );
         return;
       }
 
       setLoading(true);
-      addMessage('user', userMessage, type);
+      addMessage("user", userMessage, type);
 
       try {
         const response = await aiFunction();
-        addMessage('assistant', response, type);
-      } catch (error) {
+        addMessage("assistant", response, type);
+      } catch {
         addMessage(
-          'assistant',
-          'Sorry, I encountered an error. Please try again.',
+          "assistant",
+          "Sorry, I encountered an error. Please try again.",
           type
         );
       } finally {
@@ -98,43 +100,47 @@ export default function AICompanionScreen() {
 
   const handleSummary = useCallback(() => {
     if (!book) return;
-    handleAIRequest('summary', "What's happened so far in the story?", () =>
+    handleAIRequest("summary", "What's happened so far in the story?", () =>
       generateSummary(book.filePath, currentChapter)
     );
   }, [book, currentChapter, handleAIRequest]);
 
   const handleRecap = useCallback(() => {
     if (!book) return;
-    handleAIRequest('recap', 'Give me a quick recap.', () =>
+    handleAIRequest("recap", "Give me a quick recap.", () =>
       generateRecap(book.filePath, currentChapter)
     );
   }, [book, currentChapter, handleAIRequest]);
 
   const handleCharacters = useCallback(() => {
     if (!book) return;
-    handleAIRequest('character', 'Who are the characters so far?', () =>
+    handleAIRequest("character", "Who are the characters so far?", () =>
       generateCharacterGuide(book.filePath, currentChapter)
     );
   }, [book, currentChapter, handleAIRequest]);
 
   const handleExplain = useCallback(() => {
     // Alert.prompt is iOS-only, fallback to standard alert
-    if (Platform.OS === 'ios' && Alert.prompt) {
+    if (Platform.OS === "ios" && Alert.prompt) {
       Alert.prompt(
-        'What would you like explained?',
-        'Enter a passage or concept',
+        "What would you like explained?",
+        "Enter a passage or concept",
         (text) => {
           if (text && book) {
-            handleAIRequest('explain', `Explain: ${text}`, () =>
-              askQuestion(`Please explain this: ${text}`, book.filePath, currentChapter)
+            handleAIRequest("explain", `Explain: ${text}`, () =>
+              askQuestion(
+                `Please explain this: ${text}`,
+                book.filePath,
+                currentChapter
+              )
             );
           }
         }
       );
     } else {
       Alert.alert(
-        'Explain Feature',
-        'Type your question in the chat below to ask about specific passages or concepts.'
+        "Explain Feature",
+        "Type your question in the chat below to ask about specific passages or concepts."
       );
     }
   }, [book, currentChapter, handleAIRequest]);
@@ -143,10 +149,10 @@ export default function AICompanionScreen() {
     if (!input.trim() || !book) return;
 
     const question = input.trim();
-    setInput('');
-    inputRef.current?.clear(); // Clear native input
+    setInput("");
+    inputRef.current?.clear();
 
-    handleAIRequest('chat', question, () =>
+    handleAIRequest("chat", question, () =>
       askQuestion(question, book.filePath, currentChapter)
     );
   }, [input, book, currentChapter, handleAIRequest]);
@@ -155,16 +161,16 @@ export default function AICompanionScreen() {
     <View
       style={[
         styles.messageBubble,
-        item.role === 'user' ? styles.userBubble : styles.assistantBubble,
+        item.role === "user" ? styles.userBubble : styles.assistantBubble,
       ]}
     >
-      {item.type && item.role === 'user' && (
+      {item.type && item.role === "user" && (
         <Text style={styles.messageType}>{item.type.toUpperCase()}</Text>
       )}
       <Text
         style={[
           styles.messageText,
-          item.role === 'user' ? styles.userText : styles.assistantText,
+          item.role === "user" ? styles.userText : styles.assistantText,
         ]}
       >
         {item.content}
@@ -211,7 +217,7 @@ export default function AICompanionScreen() {
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView
         style={styles.keyboardView}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
         keyboardVerticalOffset={90}
       >
         <FlatList
@@ -224,7 +230,6 @@ export default function AICompanionScreen() {
           onContentSizeChange={() =>
             flatListRef.current?.scrollToEnd({ animated: true })
           }
-          // Performance optimizations
           removeClippedSubviews={true}
           maxToRenderPerBatch={10}
           windowSize={5}
@@ -264,7 +269,7 @@ export default function AICompanionScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#16213e',
+    backgroundColor: "#16213e",
   },
   keyboardView: {
     flex: 1,
@@ -277,17 +282,17 @@ const styles = StyleSheet.create({
   },
   bookInfo: {
     padding: 16,
-    backgroundColor: '#1a1a2e',
+    backgroundColor: "#1a1a2e",
     marginBottom: 8,
   },
   bookTitle: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: "700",
     marginBottom: 4,
   },
   chapterInfo: {
-    color: '#8b8b8b',
+    color: "#8b8b8b",
     fontSize: 13,
   },
   divider: {
@@ -295,10 +300,10 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   dividerText: {
-    color: '#8b8b8b',
+    color: "#8b8b8b",
     fontSize: 12,
-    fontWeight: '600',
-    textTransform: 'uppercase',
+    fontWeight: "600",
+    textTransform: "uppercase",
     letterSpacing: 1,
   },
   messageBubble: {
@@ -306,22 +311,22 @@ const styles = StyleSheet.create({
     marginVertical: 6,
     padding: 14,
     borderRadius: 16,
-    maxWidth: '85%',
+    maxWidth: "85%",
   },
   userBubble: {
-    backgroundColor: '#e94560',
-    alignSelf: 'flex-end',
+    backgroundColor: "#e94560",
+    alignSelf: "flex-end",
     borderBottomRightRadius: 4,
   },
   assistantBubble: {
-    backgroundColor: '#1a1a2e',
-    alignSelf: 'flex-start',
+    backgroundColor: "#1a1a2e",
+    alignSelf: "flex-start",
     borderBottomLeftRadius: 4,
   },
   messageType: {
-    color: 'rgba(255,255,255,0.7)',
+    color: "rgba(255,255,255,0.7)",
     fontSize: 10,
-    fontWeight: '600',
+    fontWeight: "600",
     marginBottom: 4,
   },
   messageText: {
@@ -329,65 +334,65 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   userText: {
-    color: '#fff',
+    color: "#fff",
   },
   assistantText: {
-    color: '#e0e0e0',
+    color: "#e0e0e0",
   },
   loadingContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     padding: 12,
-    backgroundColor: '#1a1a2e',
+    backgroundColor: "#1a1a2e",
   },
   loadingText: {
-    color: '#8b8b8b',
+    color: "#8b8b8b",
     marginLeft: 8,
     fontSize: 13,
   },
   inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
+    flexDirection: "row",
+    alignItems: "flex-end",
     padding: 12,
-    backgroundColor: '#1a1a2e',
+    backgroundColor: "#1a1a2e",
     borderTopWidth: 1,
-    borderTopColor: '#2d3561',
+    borderTopColor: "#2d3561",
   },
   input: {
     flex: 1,
-    backgroundColor: '#2d3561',
+    backgroundColor: "#2d3561",
     borderRadius: 20,
     paddingHorizontal: 16,
     paddingVertical: 10,
-    color: '#fff',
+    color: "#fff",
     fontSize: 15,
     maxHeight: 100,
   },
   sendButton: {
     width: 44,
     height: 44,
-    backgroundColor: '#e94560',
+    backgroundColor: "#e94560",
     borderRadius: 22,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     marginLeft: 8,
   },
   sendButtonDisabled: {
-    backgroundColor: '#2d3561',
+    backgroundColor: "#2d3561",
   },
   sendButtonText: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 20,
   },
   errorContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#16213e',
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#16213e",
   },
   errorText: {
-    color: '#e94560',
+    color: "#e94560",
     fontSize: 18,
   },
 });

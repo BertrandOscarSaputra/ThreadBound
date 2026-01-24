@@ -1,7 +1,7 @@
 /**
  * Library screen - displays all imported books
  */
-import React, { useCallback } from 'react';
+import React, { useCallback } from "react";
 import {
   View,
   Text,
@@ -11,17 +11,14 @@ import {
   StyleSheet,
   Alert,
   ActivityIndicator,
-} from 'react-native';
-import { useNavigation } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { useBooks, useProgress, useBookActions } from '../store/bookStore';
-import { importBook, deleteBook } from '../services/bookService';
-import { Book, RootStackParamList } from '../types';
-
-type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'Library'>;
+} from "react-native";
+import { useRouter } from "expo-router";
+import { useBooks, useProgress, useBookActions } from "@/store/bookStore";
+import { importBook, deleteBook } from "@/services/bookService";
+import { Book } from "@/types";
 
 export default function LibraryScreen() {
-  const navigation = useNavigation<NavigationProp>();
+  const router = useRouter();
   const books = useBooks();
   const progress = useProgress();
   const { addBook, removeBook } = useBookActions();
@@ -34,8 +31,11 @@ export default function LibraryScreen() {
       if (book) {
         addBook(book);
       }
-    } catch (error) {
-      Alert.alert('Import Failed', 'Could not import the book. Please try again.');
+    } catch {
+      Alert.alert(
+        "Import Failed",
+        "Could not import the book. Please try again."
+      );
     } finally {
       setLoading(false);
     }
@@ -43,18 +43,18 @@ export default function LibraryScreen() {
 
   const handleBookPress = useCallback(
     (book: Book) => {
-      navigation.navigate('Reader', { bookId: book.id });
+      router.push({ pathname: "/reader", params: { bookId: book.id } });
     },
-    [navigation]
+    [router]
   );
 
   const handleBookLongPress = useCallback(
     (book: Book) => {
-      Alert.alert('Delete Book', `Remove "${book.title}" from your library?`, [
-        { text: 'Cancel', style: 'cancel' },
+      Alert.alert("Delete Book", `Remove "${book.title}" from your library?`, [
+        { text: "Cancel", style: "cancel" },
         {
-          text: 'Delete',
-          style: 'destructive',
+          text: "Delete",
+          style: "destructive",
           onPress: async () => {
             await deleteBook(book);
             removeBook(book.id);
@@ -92,7 +92,9 @@ export default function LibraryScreen() {
         </Text>
         {getProgress(item.id) > 0 && (
           <View style={styles.progressContainer}>
-            <View style={[styles.progressBar, { width: `${getProgress(item.id)}%` }]} />
+            <View
+              style={[styles.progressBar, { width: `${getProgress(item.id)}%` }]}
+            />
           </View>
         )}
       </View>
@@ -119,7 +121,6 @@ export default function LibraryScreen() {
         contentContainerStyle={styles.listContent}
         ListEmptyComponent={renderEmpty}
         columnWrapperStyle={styles.row}
-        // Performance optimizations
         removeClippedSubviews={true}
         maxToRenderPerBatch={10}
         windowSize={5}
@@ -145,33 +146,33 @@ export default function LibraryScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#16213e',
+    backgroundColor: "#16213e",
   },
   listContent: {
     padding: 16,
     flexGrow: 1,
   },
   row: {
-    justifyContent: 'space-between',
+    justifyContent: "space-between",
   },
   bookCard: {
-    width: '48%',
-    backgroundColor: '#1a1a2e',
+    width: "48%",
+    backgroundColor: "#1a1a2e",
     borderRadius: 12,
     marginBottom: 16,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   cover: {
-    width: '100%',
+    width: "100%",
     height: 180,
-    resizeMode: 'cover',
+    resizeMode: "cover",
   },
   placeholderCover: {
-    width: '100%',
+    width: "100%",
     height: 180,
-    backgroundColor: '#2d3561',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "#2d3561",
+    justifyContent: "center",
+    alignItems: "center",
   },
   placeholderIcon: {
     fontSize: 48,
@@ -180,31 +181,31 @@ const styles = StyleSheet.create({
     padding: 12,
   },
   title: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: "600",
     marginBottom: 4,
   },
   author: {
-    color: '#8b8b8b',
+    color: "#8b8b8b",
     fontSize: 12,
   },
   progressContainer: {
     height: 3,
-    backgroundColor: '#2d3561',
+    backgroundColor: "#2d3561",
     borderRadius: 2,
     marginTop: 8,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   progressBar: {
-    height: '100%',
-    backgroundColor: '#e94560',
+    height: "100%",
+    backgroundColor: "#e94560",
     borderRadius: 2,
   },
   emptyContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     paddingVertical: 100,
   },
   emptyIcon: {
@@ -212,35 +213,35 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   emptyTitle: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 20,
-    fontWeight: '600',
+    fontWeight: "600",
     marginBottom: 8,
   },
   emptySubtitle: {
-    color: '#8b8b8b',
+    color: "#8b8b8b",
     fontSize: 14,
-    textAlign: 'center',
+    textAlign: "center",
   },
   fab: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 24,
     right: 24,
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: '#e94560',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "#e94560",
+    justifyContent: "center",
+    alignItems: "center",
     elevation: 4,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 4,
   },
   fabIcon: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 28,
-    fontWeight: '300',
+    fontWeight: "300",
   },
 });

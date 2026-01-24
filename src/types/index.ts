@@ -49,10 +49,3 @@ export interface AIMessage {
   timestamp: number;
   type?: 'summary' | 'recap' | 'character' | 'explain' | 'chat';
 }
-
-// App navigation params
-export type RootStackParamList = {
-  Library: undefined;
-  Reader: { bookId: string };
-  AICompanion: { bookId: string };
-};
